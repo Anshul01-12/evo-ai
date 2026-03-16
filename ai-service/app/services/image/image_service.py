@@ -238,37 +238,8 @@ async def stream_analyze_image(
 
 
 # ────────────────────────────────────────────────────
-# Image Generation via Stable Diffusion (diffusers)
+# Image Generation (multiple providers with fallback)
 # ────────────────────────────────────────────────────
-
-# Lazy-loaded pipeline to avoid GPU memory on startup
-_sd_pipeline = None
-
-
-def _get_sd_pipeline():
-    global _sd_pipeline
-    if _sd_pipeline is None:
-        try:
-            from diffusers import StableDiffusionPipeline
-            import torch
-
-            device = "cuda" if torch.cuda.is_available() else "cpu"
-            dtype = torch.float16 if device == "cuda" else torch.float32
-
-            _sd_pipeline = StableDiffusionPipeline.from_pretrained(
-                "runwayml/stable-diffusion-v1-5",
-                torch_dtype=dtype,
-            ).to(device)
-
-            # Enable memory optimizations
-            if device == "cuda":
-                _sd_pipeline.enable_attention_slicing()
-
-        except ImportError:
-            raise RuntimeError(
-                "Stable Diffusion not available. Install: diffusers, transformers, torch"
-            )
-    return _sd_pipeline
 
 
 async def generate_image(
@@ -279,45 +250,136 @@ async def generate_image(
     steps: int = 30,
     guidance_scale: float = 7.5,
 ) -> dict:
-    """Generate an image from a text prompt and return as base64."""
+    """Generate an image — tries Gemini Imagen, then Pollinations.ai as fallback."""
+    errors: list[str] = []
+
+    providers = [
+        ("Pollinations", lambda: _generate_with_pollinations(prompt, width, height, steps)),
+        ("StableHorde", lambda: _generate_with_stable_horde(prompt, width, height, steps)),
+    ]
+
+    for name, fn in providers:
+        try:
+            result = await fn()
+            if result:
+                print(f"[ImageGen] {name} succeeded")
+                return result
+        except Exception as e:
+            errors.append(f"{name}: {e}")
+            print(f"[ImageGen] {name} failed: {e}")
+
+    raise RuntimeError(f"Image generation failed. Tried: {'; '.join(errors)}")
+
+
+async def _generate_with_pollinations(
+    prompt: str, width: int, height: int, steps: int
+) -> dict | None:
+    """Generate image using Pollinations.ai free API."""
+    import random
+    from urllib.parse import quote
+
+    encoded_prompt = quote(prompt)
+
+    async with httpx.AsyncClient(timeout=120.0, follow_redirects=True) as client:
+        last_error = None
+        for attempt in range(3):
+            seed = random.randint(1, 999999)
+            url = (
+                f"https://image.pollinations.ai/prompt/{encoded_prompt}"
+                f"?width={width}&height={height}&seed={seed}&model=flux&nologo=true"
+            )
+            try:
+                response = await client.get(url)
+                if response.status_code == 200 and len(response.content) > 1000:
+                    image_bytes = response.content
+                    image_b64 = base64.b64encode(image_bytes).decode("utf-8")
+                    return {
+                        "image_base64": image_b64,
+                        "prompt": prompt,
+                        "width": width,
+                        "height": height,
+                        "steps": steps,
+                    }
+                last_error = f"Status {response.status_code}, size {len(response.content)}"
+            except Exception as e:
+                last_error = str(e)
+
+        raise RuntimeError(f"Failed after 3 attempts: {last_error}")
+
+
+async def _generate_with_stable_horde(
+    prompt: str, width: int, height: int, steps: int
+) -> dict | None:
+    """Generate image using AI Horde (free, community-powered)."""
     import asyncio
 
-    pipeline = _get_sd_pipeline()
-
-    # Run in executor to not block the event loop
-    def _generate():
-        result = pipeline(
-            prompt=prompt,
-            negative_prompt=negative_prompt or None,
-            width=width,
-            height=height,
-            num_inference_steps=steps,
-            guidance_scale=guidance_scale,
-        )
-        return result.images[0]
-
-    with observe_operation(
-        name="stable-diffusion-generate",
-        input_payload={
-            "prompt": prompt,
-            "width": width,
-            "height": height,
-            "steps": steps,
-            "guidance_scale": guidance_scale,
-        },
-    ):
-        loop = asyncio.get_event_loop()
-        image = await loop.run_in_executor(None, _generate)
-
-    # Convert to base64 PNG
-    buffer = io.BytesIO()
-    image.save(buffer, format="PNG")
-    image_b64 = base64.b64encode(buffer.getvalue()).decode("utf-8")
-
-    return {
-        "image_base64": image_b64,
-        "prompt": prompt,
-        "width": width,
-        "height": height,
-        "steps": steps,
+    api_url = "https://aihorde.net/api/v2"
+    headers = {
+        "Content-Type": "application/json",
+        "apikey": "0000000000",  # anonymous access
     }
+
+    # Round dimensions to nearest 64 (required by SD)
+    w = max(256, min(1024, (width // 64) * 64))
+    h = max(256, min(1024, (height // 64) * 64))
+
+    payload = {
+        "prompt": prompt,
+        "params": {
+            "width": w,
+            "height": h,
+            "steps": min(steps, 30),
+            "cfg_scale": 7.0,
+            "sampler_name": "k_euler_a",
+        },
+        "nsfw": False,
+        "models": ["stable_diffusion"],
+        "r2": True,
+    }
+
+    async with httpx.AsyncClient(timeout=180.0) as client:
+        # Submit job
+        resp = await client.post(f"{api_url}/generate/async", json=payload, headers=headers)
+        if resp.status_code != 202:
+            raise RuntimeError(f"Horde submit failed: {resp.status_code} {resp.text[:200]}")
+
+        job_id = resp.json().get("id")
+        if not job_id:
+            raise RuntimeError("No job ID returned")
+
+        # Poll for completion (max 120 seconds)
+        for _ in range(60):
+            await asyncio.sleep(2)
+            check = await client.get(f"{api_url}/generate/check/{job_id}")
+            status = check.json()
+            if status.get("done"):
+                break
+            if status.get("faulted"):
+                raise RuntimeError("Generation faulted")
+        else:
+            raise RuntimeError("Generation timed out")
+
+        # Get result
+        result_resp = await client.get(f"{api_url}/generate/status/{job_id}")
+        result_data = result_resp.json()
+        generations = result_data.get("generations", [])
+        if not generations:
+            raise RuntimeError("No generations returned")
+
+        img_url = generations[0].get("img")
+        if not img_url:
+            raise RuntimeError("No image URL")
+
+        # Download the image
+        img_resp = await client.get(img_url)
+        if img_resp.status_code != 200 or len(img_resp.content) < 1000:
+            raise RuntimeError(f"Image download failed: {img_resp.status_code}")
+
+        image_b64 = base64.b64encode(img_resp.content).decode("utf-8")
+        return {
+            "image_base64": image_b64,
+            "prompt": prompt,
+            "width": w,
+            "height": h,
+            "steps": steps,
+        }

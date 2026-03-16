@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef } from "react";
+import { useState, useEffect, useRef, useCallback } from "react";
 import {
   FileText,
   Upload,
@@ -10,6 +10,7 @@ import {
   ChevronDown,
   ChevronUp,
   Bot,
+  UploadCloud,
 } from "lucide-react";
 import ReactMarkdown from "react-markdown";
 import {
@@ -29,6 +30,8 @@ export function DocumentsPage() {
   const [selectedCollection, setSelectedCollection] = useState("default");
   const [qaResult, setQaResult] = useState<QAResponse | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const [isDragging, setIsDragging] = useState(false);
+  const dragCounter = useRef(0);
   const fileRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
@@ -47,9 +50,11 @@ export function DocumentsPage() {
     }
   };
 
-  const handleUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (!file) return;
+  const processFile = useCallback(async (file: File) => {
+    if (!file.name.toLowerCase().endsWith(".pdf")) {
+      setError("Only PDF files are supported");
+      return;
+    }
     setUploading(true);
     setError(null);
     try {
@@ -59,9 +64,43 @@ export function DocumentsPage() {
       setError("Upload failed");
     } finally {
       setUploading(false);
-      if (fileRef.current) fileRef.current.value = "";
     }
+  }, [selectedCollection]);
+
+  const handleUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    await processFile(file);
+    if (fileRef.current) fileRef.current.value = "";
   };
+
+  const handleDragEnter = useCallback((e: React.DragEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    dragCounter.current++;
+    setIsDragging(true);
+  }, []);
+
+  const handleDragLeave = useCallback((e: React.DragEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    dragCounter.current--;
+    if (dragCounter.current === 0) setIsDragging(false);
+  }, []);
+
+  const handleDragOver = useCallback((e: React.DragEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+  }, []);
+
+  const handleDrop = useCallback(async (e: React.DragEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    dragCounter.current = 0;
+    setIsDragging(false);
+    const file = e.dataTransfer.files?.[0];
+    if (file) await processFile(file);
+  }, [processFile]);
 
   const handleDelete = async (id: string) => {
     try {
@@ -98,7 +137,24 @@ export function DocumentsPage() {
   );
 
   return (
-    <div className="flex-1 overflow-y-auto">
+    <div
+      className="flex-1 overflow-y-auto relative"
+      onDragEnter={handleDragEnter}
+      onDragLeave={handleDragLeave}
+      onDragOver={handleDragOver}
+      onDrop={handleDrop}
+    >
+      {/* Drag overlay */}
+      {isDragging && (
+        <div className="absolute inset-0 z-50 bg-white/80 backdrop-blur-sm flex items-center justify-center">
+          <div className="flex flex-col items-center gap-3 p-8 rounded-2xl border-2 border-dashed border-evo-accent bg-evo-accent/5">
+            <UploadCloud size={48} className="text-evo-accent" />
+            <p className="text-lg font-medium text-evo-accent">Drop your PDF here</p>
+            <p className="text-sm text-evo-muted">It will be added to "{selectedCollection}"</p>
+          </div>
+        </div>
+      )}
+
       <div className="max-w-4xl mx-auto py-8 px-4 space-y-8">
         {/* Header */}
         <div>
@@ -166,8 +222,12 @@ export function DocumentsPage() {
               <Loader2 size={24} className="animate-spin text-evo-muted" />
             </div>
           ) : readyDocs.length === 0 ? (
-            <div className="text-center py-8 text-evo-muted text-sm">
-              No documents yet. Upload a PDF to get started.
+            <div
+              onClick={() => fileRef.current?.click()}
+              className="flex flex-col items-center gap-2 py-10 border-2 border-dashed border-evo-border rounded-xl text-evo-muted cursor-pointer hover:border-evo-accent hover:text-evo-accent transition-colors"
+            >
+              <UploadCloud size={32} />
+              <p className="text-sm">No documents yet. Drop a PDF here or click to upload.</p>
             </div>
           ) : (
             <div className="grid gap-2">

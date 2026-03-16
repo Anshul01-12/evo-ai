@@ -44,7 +44,13 @@ async def _run_voice_pipeline(
     transcription = await transcribe_audio(file_path)
 
     messages = [{"role": "user", "content": transcription}]
-    system_prompt = EVO_SYSTEM_PROMPT
+    system_prompt = (
+        EVO_SYSTEM_PROMPT
+        + "\n\nIMPORTANT: Always respond in the same language the user is speaking. "
+        "If the user speaks in English, reply in English. "
+        "If the user speaks in Hindi, reply in Hindi. "
+        "Match the user's language exactly."
+    )
 
     if use_rag and collection_name:
         context_chunks = await retrieve_context(transcription, collection_name)

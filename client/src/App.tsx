@@ -9,6 +9,7 @@ import { VoiceAssistant } from "@/components/features/VoiceAssistant";
 import { CodeInterpreter } from "@/components/features/CodeInterpreter";
 import { TextTools } from "@/components/features/TextTools";
 import { ImageGenerator } from "@/components/features/ImageGenerator";
+import { VoiceCommand } from "@/components/features/VoiceCommand";
 import { useChatStore } from "@/stores/chatStore";
 import { useAuthStore } from "@/stores/authStore";
 
@@ -26,6 +27,7 @@ function AppLayout() {
         <Route path="/code" element={<CodeInterpreter />} />
         <Route path="/text-tools" element={<TextTools />} />
         <Route path="/image-generator" element={<ImageGenerator />} />
+        <Route path="/voice-command" element={<VoiceCommand />} />
       </Routes>
     </div>
   );

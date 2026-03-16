@@ -9,6 +9,10 @@ import {
   FileSearch,
   Lightbulb,
   PenLine,
+  Settings,
+  LogOut,
+  User,
+  ChevronDown,
 } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import { useChatStore } from "@/stores/chatStore";
@@ -16,6 +20,7 @@ import { useAuthStore } from "@/stores/authStore";
 import { useChat } from "@/hooks/useChat";
 import { ChatMessage } from "./ChatMessage";
 import { ChatInput } from "./ChatInput";
+import { SettingsPanel } from "../sidebar/SettingsPanel";
 
 export function ChatArea() {
   const { messages, sidebarOpen, toggleSidebar, error, setError, isLoading, isStreaming } =
@@ -26,6 +31,8 @@ export function ChatArea() {
   const navigate = useNavigate();
   const { sendMessage } = useChat();
   const bottomRef = useRef<HTMLDivElement>(null);
+  const [showUserMenu, setShowUserMenu] = useState(false);
+  const [showSettings, setShowSettings] = useState(false);
 
   useEffect(() => {
     bottomRef.current?.scrollIntoView({ behavior: "smooth" });
@@ -61,16 +68,61 @@ export function ChatArea() {
             Sign in
           </button>
         ) : (
-          <div className="flex items-center gap-3">
-            <div className="w-8 h-8 rounded-full bg-evo-card flex items-center justify-center text-sm font-medium text-evo-text">
-              {(user?.name || user?.email || "U")[0].toUpperCase()}
-            </div>
+          <div className="relative">
             <button
-              onClick={() => { logout(); navigate("/login"); }}
-              className="text-xs text-evo-muted hover:text-evo-text transition-colors"
+              onClick={() => setShowUserMenu(!showUserMenu)}
+              className="flex items-center gap-2 px-2 py-1.5 rounded-xl hover:bg-evo-card transition-colors"
             >
-              Logout
+              <div className="w-8 h-8 rounded-full bg-gradient-to-br from-evo-accent to-indigo-500 flex items-center justify-center text-sm font-semibold text-white shadow-sm">
+                {(user?.name || user?.email || "U")[0].toUpperCase()}
+              </div>
+              <div className="hidden sm:block text-left">
+                <p className="text-xs font-medium text-evo-text leading-tight">{user?.name || "User"}</p>
+                <p className="text-[10px] text-evo-muted leading-tight">{user?.email || ""}</p>
+              </div>
+              <ChevronDown size={14} className={`text-evo-muted transition-transform ${showUserMenu ? "rotate-180" : ""}`} />
             </button>
+
+            {showUserMenu && (
+              <>
+                <div className="fixed inset-0 z-30" onClick={() => setShowUserMenu(false)} />
+                <div className="absolute right-0 top-full mt-1.5 z-40 w-56 rounded-xl border border-evo-border bg-white shadow-xl overflow-hidden">
+                  {/* User info */}
+                  <div className="px-4 py-3 border-b border-evo-border bg-evo-sidebar">
+                    <p className="text-sm font-semibold text-evo-text">{user?.name || "User"}</p>
+                    <p className="text-xs text-evo-muted truncate">{user?.email || ""}</p>
+                  </div>
+
+                  {/* Menu items */}
+                  <div className="p-1.5">
+                    <button
+                      onClick={() => { setShowUserMenu(false); setShowSettings(true); }}
+                      className="w-full flex items-center gap-2.5 px-3 py-2.5 rounded-lg text-sm text-evo-muted hover:bg-evo-card hover:text-evo-text transition-colors"
+                    >
+                      <User size={15} />
+                      Profile
+                    </button>
+                    <button
+                      onClick={() => { setShowUserMenu(false); setShowSettings(true); }}
+                      className="w-full flex items-center gap-2.5 px-3 py-2.5 rounded-lg text-sm text-evo-muted hover:bg-evo-card hover:text-evo-text transition-colors"
+                    >
+                      <Settings size={15} />
+                      Settings
+                    </button>
+                  </div>
+
+                  <div className="border-t border-evo-border p-1.5">
+                    <button
+                      onClick={() => { setShowUserMenu(false); logout(); navigate("/login"); }}
+                      className="w-full flex items-center gap-2.5 px-3 py-2.5 rounded-lg text-sm text-red-500 hover:bg-red-50 transition-colors"
+                    >
+                      <LogOut size={15} />
+                      Log out
+                    </button>
+                  </div>
+                </div>
+              </>
+            )}
           </div>
         )}
       </header>
@@ -138,6 +190,7 @@ export function ChatArea() {
           </p>
         </div>
       </div>
+      <SettingsPanel open={showSettings} onClose={() => setShowSettings(false)} />
     </main>
   );
 }

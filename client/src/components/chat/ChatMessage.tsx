@@ -33,9 +33,18 @@ export function ChatMessage({ message }: Props) {
           </p>
 
           {isUser ? (
-            <p className="text-[15px] text-evo-text leading-relaxed whitespace-pre-wrap">
-              {message.content}
-            </p>
+            <div>
+              {message.imageUrl && (
+                <img
+                  src={message.imageUrl}
+                  alt="Uploaded"
+                  className="max-w-xs rounded-xl border border-evo-border mb-2"
+                />
+              )}
+              <p className="text-[15px] text-evo-text leading-relaxed whitespace-pre-wrap">
+                {message.content}
+              </p>
+            </div>
           ) : (
             <div className="text-[15px] text-evo-text leading-relaxed">
               <div className="markdown-content">

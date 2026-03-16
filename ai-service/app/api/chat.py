@@ -77,8 +77,9 @@ async def summarize(request: SummarizeRequest):
 
     summary_prompt = (
         "You summarize conversations for a memory system. "
-        "Extract the key topics, user preferences, decisions, and action items "
-        "in 2-3 concise sentences. Focus on facts that would be useful in future conversations."
+        "Extract the key topics, decisions, and action items "
+        "in 2-3 concise sentences in English. Focus on facts that would be useful in future conversations. "
+        "Do NOT include language preferences. Always write the summary in English."
     )
 
     messages = [{"role": "user", "content": f"Summarize this conversation:\n\n{conversation_text}"}]
@@ -106,7 +107,7 @@ async def extract_profile(request: ExtractProfileRequest):
         "You are a fact extraction system. Analyze the conversation below and extract "
         "any personal facts the USER has shared about themselves. "
         "Return ONLY a valid JSON object with relevant keys. Common keys include:\n"
-        "name, age, location, occupation, interests, language, timezone, "
+        "name, age, location, occupation, interests, timezone, "
         "preferences, skills, goals, company, education\n\n"
         "Rules:\n"
         "- Only include facts the USER explicitly stated, not the assistant\n"

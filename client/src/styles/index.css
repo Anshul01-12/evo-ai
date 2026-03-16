@@ -82,3 +82,40 @@ textarea {
   @apply bg-evo-card px-1.5 py-0.5 rounded text-sm;
   color: #4f6ef7;
 }
+
+/* Animated rotating border for chat input */
+@property --border-angle {
+  syntax: "<angle>";
+  initial-value: 0deg;
+  inherits: false;
+}
+
+.chat-input-wrapper {
+  position: relative;
+  border-radius: 1rem;
+  padding: 2px;
+  background: #e0e4f0;
+  transition: background 0.3s;
+}
+
+.chat-input-wrapper.focused {
+  background: conic-gradient(
+    from var(--border-angle),
+    #4f6ef7,
+    #a78bfa,
+    #60a5fa,
+    #4f6ef7
+  );
+  animation: rotate-border 2.5s linear infinite;
+}
+
+.chat-input-inner {
+  background: white;
+  border-radius: calc(1rem - 2px);
+}
+
+@keyframes rotate-border {
+  to {
+    --border-angle: 360deg;
+  }
+}

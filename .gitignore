@@ -31,3 +31,6 @@ uploads/
 mongo_data/
 redis_data/
 qdrant_data/
+
+# Qdrant local storage
+storage/

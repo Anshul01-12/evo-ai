@@ -136,7 +136,7 @@ export async function buildMemoryPrompt(userId: string): Promise<string> {
   const sections: string[] = [];
 
   // User profile section
-  const profileEntries = Object.entries(profile).filter(([, v]) => v && v.trim());
+  const profileEntries = Object.entries(profile).filter(([k, v]) => v && v.trim() && k !== "language");
   if (profileEntries.length > 0) {
     sections.push(
       "Known facts about this user (use naturally, don't repeat back unless asked):\n" +

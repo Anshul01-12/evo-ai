@@ -10,7 +10,8 @@ import {
 } from "lucide-react";
 import { useChatStore } from "@/stores/chatStore";
 import { useChat } from "@/hooks/useChat";
-import { uploadDocument } from "@/services/api";
+import { uploadDocument, analyzeImage } from "@/services/api";
+import { X } from "lucide-react";
 
 const MODELS = [
   { id: "groq-llama3-70b", name: "Llama 3.3 70B", badge: "Groq" },
@@ -40,17 +41,66 @@ export function ChatInput() {
   const [isRecording, setIsRecording] = useState(false);
   const [showModelPicker, setShowModelPicker] = useState(false);
   const [voiceMode, setVoiceMode] = useState(false);
+  const [isFocused, setIsFocused] = useState(false);
+  const [attachedImage, setAttachedImage] = useState<{ file: File; preview: string } | null>(null);
   const mediaRecorderRef = useRef<MediaRecorder | null>(null);
   const fileRef = useRef<HTMLInputElement>(null);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
 
-  const { isStreaming, isLoading, model, setModel } = useChatStore();
-  const { sendMessage, stopStreaming, processVoice } = useChat();
+  const { isStreaming, isLoading, model, setModel, activeConversationId, addMessage, setLoading, setError, setActiveConversation } = useChatStore();
+  const { sendMessage, stopStreaming, processVoice, refreshHistory } = useChat();
 
   const selectedModel = MODELS.find((m) => m.id === model) || MODELS[0];
 
-  const handleSubmit = () => {
-    if (!input.trim() || isStreaming || isLoading) return;
+  const handleSubmit = async () => {
+    if (isStreaming || isLoading) return;
+
+    // Image + text submission
+    if (attachedImage) {
+      const question = input.trim() || "What's in this image?";
+      const imagePreview = attachedImage.preview;
+      const imageFile = attachedImage.file;
+
+      setAttachedImage(null);
+      setInput("");
+      if (textareaRef.current) textareaRef.current.style.height = "auto";
+
+      // Show user message with image
+      addMessage({
+        _id: crypto.randomUUID(),
+        role: "user",
+        content: question,
+        timestamp: new Date().toISOString(),
+        imageUrl: imagePreview,
+      });
+
+      setLoading(true);
+      setError(null);
+      try {
+        const res = await analyzeImage({
+          file: imageFile,
+          question,
+          sessionId: activeConversationId || undefined,
+          model,
+        });
+        addMessage({
+          _id: crypto.randomUUID(),
+          role: "assistant",
+          content: res.message.content,
+          timestamp: res.message.timestamp,
+        });
+        setActiveConversation(res.sessionId);
+        refreshHistory();
+      } catch (err: any) {
+        setError(err?.message || "Image analysis failed");
+      } finally {
+        setLoading(false);
+      }
+      return;
+    }
+
+    // Text-only submission
+    if (!input.trim()) return;
     sendMessage(input);
     setInput("");
     if (textareaRef.current) textareaRef.current.style.height = "auto";
@@ -70,11 +120,39 @@ export function ChatInput() {
     el.style.height = `${Math.min(el.scrollHeight, 200)}px`;
   };
 
+  const handlePaste = (e: React.ClipboardEvent) => {
+    const items = e.clipboardData?.items;
+    if (!items) return;
+    for (const item of items) {
+      if (item.type.startsWith("image/")) {
+        e.preventDefault();
+        const file = item.getAsFile();
+        if (file) {
+          const preview = URL.createObjectURL(file);
+          setAttachedImage({ file, preview });
+        }
+        return;
+      }
+    }
+  };
+
   const handleFileClick = () => fileRef.current?.click();
 
   const handleFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
+
+    const isImage = file.type.startsWith("image/");
+
+    if (isImage) {
+      // Attach image for chat analysis
+      const preview = URL.createObjectURL(file);
+      setAttachedImage({ file, preview });
+      if (fileRef.current) fileRef.current.value = "";
+      return;
+    }
+
+    // PDF — upload as document for RAG
     setIsUploading(true);
     try {
       await uploadDocument(file);
@@ -225,7 +303,27 @@ export function ChatInput() {
         </>
       )}
 
-      <div className="bg-white rounded-2xl border border-evo-border shadow-sm">
+      <div className={`chat-input-wrapper ${isFocused ? "focused" : ""}`}>
+       <div className="chat-input-inner">
+        {/* Image Preview */}
+        {attachedImage && (
+          <div className="px-4 pt-3">
+            <div className="relative inline-block">
+              <img
+                src={attachedImage.preview}
+                alt="Attached"
+                className="h-24 rounded-xl border border-evo-border object-cover"
+              />
+              <button
+                onClick={() => { URL.revokeObjectURL(attachedImage.preview); setAttachedImage(null); }}
+                className="absolute -top-2 -right-2 w-5 h-5 rounded-full bg-evo-text text-white flex items-center justify-center hover:bg-red-500 transition-colors"
+              >
+                <X size={12} />
+              </button>
+            </div>
+          </div>
+        )}
+
         {/* Textarea */}
         <div className="px-4 pt-3 pb-1">
           <textarea
@@ -233,6 +331,9 @@ export function ChatInput() {
             value={input}
             onChange={handleTextareaChange}
             onKeyDown={handleKeyDown}
+            onPaste={handlePaste}
+            onFocus={() => setIsFocused(true)}
+            onBlur={() => setIsFocused(false)}
             placeholder="Ask Evo anything..."
             rows={1}
             className="w-full bg-transparent resize-none outline-none text-[15px] py-1 max-h-[200px] overflow-y-auto placeholder:text-evo-muted text-evo-text"
@@ -284,7 +385,7 @@ export function ChatInput() {
             ) : (
               <button
                 onClick={handleSubmit}
-                disabled={!input.trim()}
+                disabled={!input.trim() && !attachedImage}
                 className="p-2 rounded-xl bg-evo-accent text-white disabled:opacity-20 hover:bg-evo-accent-hover transition-colors"
                 title="Send message"
               >
@@ -293,6 +394,7 @@ export function ChatInput() {
             )}
           </div>
         </div>
+       </div>
       </div>
     </div>
   );

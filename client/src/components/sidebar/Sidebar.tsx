@@ -14,6 +14,7 @@ import {
   PenLine,
   Wand2,
   BookOpen,
+  Terminal,
 } from "lucide-react";
 import { useChatStore } from "@/stores/chatStore";
 import { fetchHistory, fetchConversation, deleteConversation } from "@/services/api";
@@ -106,6 +107,7 @@ export function Sidebar() {
     { icon: PenLine, label: "Text Tools", path: "/text-tools" },
     { icon: Wand2, label: "Image Generator", path: "/image-generator" },
     { icon: BookOpen, label: "PDF Q&A", path: "/documents" },
+    { icon: Terminal, label: "Voice Command", path: "/voice-command" },
   ];
 
   return (
