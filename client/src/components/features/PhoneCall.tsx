@@ -144,7 +144,7 @@ export function PhoneCallPage() {
     return new Date(iso).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" });
   };
 
-  const dialPad = ["1", "2", "3", "4", "5", "6", "7", "8", "9", "*", "0", "#"];
+  const dialPad = ["1", "2", "3", "4", "5", "6", "7", "8", "9", "+", "0", "#"];
 
   const isActive = !!activeCallSid;
 

@@ -1,5 +1,6 @@
 import { useState, useEffect } from "react";
 import { useNavigate, useLocation } from "react-router-dom";
+import { motion, AnimatePresence } from "framer-motion";
 import {
   Plus,
   MessageSquare,
@@ -16,6 +17,8 @@ import {
   BookOpen,
   Terminal,
   Phone,
+  History,
+  X,
 } from "lucide-react";
 import { useChatStore } from "@/stores/chatStore";
 import { fetchHistory, fetchConversation, deleteConversation } from "@/services/api";
@@ -64,6 +67,7 @@ export function Sidebar() {
   const [hoveredId, setHoveredId] = useState<string | null>(null);
   const [loadingId, setLoadingId] = useState<string | null>(null);
   const [historyLoading, setHistoryLoading] = useState(true);
+  const [historyOpen, setHistoryOpen] = useState(false);
   const [settingsOpen, setSettingsOpen] = useState(false);
 
   useEffect(() => {
@@ -81,6 +85,8 @@ export function Sidebar() {
       const full = await fetchConversation(conv._id);
       setActiveConversation(full._id);
       setMessages((full.messages || []) as import("@/types/chat").Message[]);
+      navigate("/");
+      setHistoryOpen(false);
     } catch {
       // ignore
     } finally {
@@ -143,7 +149,7 @@ export function Sidebar() {
         </div>
 
         {/* Navigation */}
-        <div className="px-3 space-y-0.5 overflow-y-auto">
+        <div className="px-3 space-y-0.5 flex-1 overflow-y-auto">
           <p className="text-[11px] uppercase tracking-wider text-evo-muted font-medium px-1 mb-1.5 mt-2">Features</p>
           {navItems.map(({ icon: Icon, label, path }) => (
             <button
@@ -162,7 +168,7 @@ export function Sidebar() {
         </div>
 
         {/* Model Selector */}
-        <div className="px-3 mt-3 mb-2 relative">
+        <div className="px-3 mt-2 mb-2 relative">
           <p className="text-[11px] uppercase tracking-wider text-evo-muted font-medium px-1 mb-1.5">Model</p>
           <button
             onClick={() => setModelOpen(!modelOpen)}
@@ -202,52 +208,22 @@ export function Sidebar() {
           )}
         </div>
 
-        {/* Chat History */}
-        <div className="flex-1 overflow-y-auto px-3 mt-1">
-          <p className="text-[11px] uppercase tracking-wider text-evo-muted font-medium px-1 mb-1.5">Recent</p>
-
-          {historyLoading ? (
-            <div className="flex justify-center py-6">
-              <Loader2 size={18} className="animate-spin text-evo-muted" />
+        {/* Bottom: History + Settings */}
+        <div className="p-3 border-t border-evo-border space-y-1">
+          <button
+            onClick={() => setHistoryOpen(true)}
+            className="w-full flex items-center justify-between px-3 py-2.5 rounded-xl text-sm text-evo-muted hover:bg-evo-card hover:text-evo-text transition-colors"
+          >
+            <div className="flex items-center gap-2.5">
+              <History size={16} />
+              History
             </div>
-          ) : conversations.length === 0 ? (
-            <p className="text-xs text-evo-muted px-3 py-4">No conversations yet</p>
-          ) : (
-            <div className="space-y-0.5">
-              {conversations.map((conv) => (
-                <button
-                  key={conv._id}
-                  onClick={() => handleSelectConversation(conv)}
-                  onMouseEnter={() => setHoveredId(conv._id)}
-                  onMouseLeave={() => setHoveredId(null)}
-                  className={`w-full flex items-center gap-2.5 px-3 py-2 rounded-xl text-sm transition-colors group ${
-                    activeConversationId === conv._id
-                      ? "bg-evo-card text-evo-text font-medium"
-                      : "text-evo-muted hover:bg-evo-card hover:text-evo-text"
-                  }`}
-                >
-                  {loadingId === conv._id ? (
-                    <Loader2 size={14} className="animate-spin shrink-0" />
-                  ) : (
-                    <MessageSquare size={14} className="shrink-0 opacity-50" />
-                  )}
-                  <span className="truncate flex-1 text-left">{conv.title}</span>
-                  {hoveredId === conv._id && (
-                    <button
-                      onClick={(e) => handleDelete(conv._id, e)}
-                      className="p-1 rounded-lg hover:bg-red-50 text-red-400 hover:text-red-500 transition-colors"
-                    >
-                      <Trash2 size={12} />
-                    </button>
-                  )}
-                </button>
-              ))}
-            </div>
-          )}
-        </div>
-
-        {/* Settings */}
-        <div className="p-3 border-t border-evo-border">
+            {conversations.length > 0 && (
+              <span className="text-[10px] font-semibold bg-evo-accent/10 text-evo-accent px-1.5 py-0.5 rounded-full">
+                {conversations.length}
+              </span>
+            )}
+          </button>
           <button
             onClick={() => setSettingsOpen(true)}
             className="w-full flex items-center gap-2.5 px-3 py-2.5 rounded-xl text-sm text-evo-muted hover:bg-evo-card hover:text-evo-text transition-colors"
@@ -257,6 +233,105 @@ export function Sidebar() {
           </button>
         </div>
       </aside>
+
+      {/* History Panel — full left side overlay */}
+      <AnimatePresence>
+        {historyOpen && (
+          <>
+            <motion.div
+              className="fixed inset-0 bg-black/20 backdrop-blur-sm z-40"
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              onClick={() => setHistoryOpen(false)}
+            />
+            <motion.div
+              className="fixed left-0 top-0 bottom-0 w-80 bg-white z-50 shadow-2xl flex flex-col"
+              initial={{ x: "-100%" }}
+              animate={{ x: 0 }}
+              exit={{ x: "-100%" }}
+              transition={{ type: "spring", stiffness: 300, damping: 30 }}
+            >
+              {/* History Header */}
+              <div className="flex items-center justify-between px-5 py-4 border-b border-evo-border">
+                <div className="flex items-center gap-2.5">
+                  <History size={18} className="text-evo-accent" />
+                  <h2 className="text-lg font-bold text-evo-text">History</h2>
+                </div>
+                <button
+                  onClick={() => setHistoryOpen(false)}
+                  className="p-2 rounded-xl hover:bg-evo-card text-evo-muted hover:text-evo-text transition-colors"
+                >
+                  <X size={18} />
+                </button>
+              </div>
+
+              {/* History List */}
+              <div className="flex-1 overflow-y-auto px-3 py-3">
+                {historyLoading ? (
+                  <div className="flex justify-center py-12">
+                    <Loader2 size={24} className="animate-spin text-evo-muted" />
+                  </div>
+                ) : conversations.length === 0 ? (
+                  <div className="text-center py-12">
+                    <MessageSquare size={32} className="text-evo-border mx-auto mb-3" />
+                    <p className="text-sm text-evo-muted">No conversations yet</p>
+                    <p className="text-xs text-evo-muted mt-1">Start a new chat to see it here</p>
+                  </div>
+                ) : (
+                  <div className="space-y-1">
+                    {conversations.map((conv) => (
+                      <button
+                        key={conv._id}
+                        onClick={() => handleSelectConversation(conv)}
+                        onMouseEnter={() => setHoveredId(conv._id)}
+                        onMouseLeave={() => setHoveredId(null)}
+                        className={`w-full flex items-center gap-3 px-3 py-3 rounded-xl text-sm transition-colors ${
+                          activeConversationId === conv._id
+                            ? "bg-evo-accent/10 text-evo-accent font-medium border border-evo-accent/20"
+                            : "text-evo-text hover:bg-evo-card"
+                        }`}
+                      >
+                        {loadingId === conv._id ? (
+                          <Loader2 size={16} className="animate-spin shrink-0 text-evo-accent" />
+                        ) : (
+                          <MessageSquare size={16} className="shrink-0 opacity-40" />
+                        )}
+                        <div className="flex-1 min-w-0 text-left">
+                          <p className="truncate">{conv.title}</p>
+                          <p className="text-[10px] text-evo-muted mt-0.5">
+                            {new Date(conv.updatedAt || conv.createdAt).toLocaleDateString(undefined, {
+                              month: "short",
+                              day: "numeric",
+                              hour: "2-digit",
+                              minute: "2-digit",
+                            })}
+                          </p>
+                        </div>
+                        {hoveredId === conv._id && (
+                          <button
+                            onClick={(e) => handleDelete(conv._id, e)}
+                            className="p-1.5 rounded-lg hover:bg-red-50 text-red-400 hover:text-red-500 transition-colors"
+                          >
+                            <Trash2 size={13} />
+                          </button>
+                        )}
+                      </button>
+                    ))}
+                  </div>
+                )}
+              </div>
+
+              {/* History Footer */}
+              <div className="px-4 py-3 border-t border-evo-border">
+                <p className="text-[10px] text-evo-muted text-center">
+                  {conversations.length} conversation{conversations.length !== 1 ? "s" : ""}
+                </p>
+              </div>
+            </motion.div>
+          </>
+        )}
+      </AnimatePresence>
 
       <SettingsPanel open={settingsOpen} onClose={() => setSettingsOpen(false)} />
     </>
