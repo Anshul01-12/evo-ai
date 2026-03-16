@@ -1,0 +1,40 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(find:*)",
+      "Bash(find c:AI -type f \\\\\\(-name .env -o -name *.env.* \\\\\\))",
+      "Bash(echo:*)",
+      "Bash(where docker:*)",
+      "Bash(cd:*)",
+      "Bash(.venv/Scripts/pip.exe install:*)",
+      "Bash(sleep:*)",
+      "Bash(curl:*)",
+      "Bash(taskkill:*)",
+      "Bash(command:*)",
+      "Bash(ollama.exe --version 2>/dev/null || echo \"no ollama\"; pip --version 2>/dev/null || echo \"no pip\")",
+      "Bash(winget install:*)",
+      "Bash(unzip:*)",
+      "Bash(grep:*)",
+      "Read(//c/Users/vedpr/AppData/Local/Programs/Ollama/**)",
+      "Read(//c/Program Files/Ollama/**)",
+      "Read(//c/Users/vedpr/AppData/**)",
+      "Bash(export:*)",
+      "Bash(npm install:*)",
+      "Bash(npx tsc:*)",
+      "Bash(.venv/Scripts/python -c \"\nimport asyncio\nfrom app.services.llm.chat_service import get_chat_model\n\nasync def test\\(\\):\n    llm = get_chat_model\\('groq-llama3-8b'\\)\n    resp = await llm.ainvoke\\([{'role':'user','content':'say hi in 3 words'}]\\)\n    print\\('SUCCESS:', resp.content\\)\n\nasyncio.run\\(test\\(\\)\\)\n\" 2>&1)",
+      "Bash(.venv/Scripts/python -c \"from app.core.config import get_settings; s=get_settings\\(\\); print\\('GROQ key:', repr\\(s.GROQ_API_KEY[:15]+'...' if s.GROQ_API_KEY else 'EMPTY'\\)\\)\" 2>&1)",
+      "Bash(.venv/Scripts/python -c \"\nimport asyncio\nfrom app.services.llm.chat_service import get_chat_model\nfrom langchain_core.messages import HumanMessage\n\nasync def test\\(\\):\n    llm = get_chat_model\\('gemini-2.0-flash'\\)\n    resp = await llm.ainvoke\\([HumanMessage\\(content='say hello in 5 words'\\)]\\)\n    print\\('SUCCESS:', resp.content\\)\n\nasyncio.run\\(test\\(\\)\\)\n\" 2>&1)",
+      "WebFetch(domain:youtube.com)",
+      "Bash(node:*)",
+      "Bash(netstat:*)",
+      "Bash(wmic process:*)",
+      "Bash(powershell -Command \"Get-Process -Id 22100 | Select-Object ProcessName, Path, CommandLine | Format-List\" 2>&1)",
+      "Bash(powershell -Command \"Get-Process -Id 7720 | Select-Object ProcessName, Path\" 2>&1)",
+      "Bash(powershell -Command \"Get-NetTCPConnection -LocalPort 8000 -ErrorAction SilentlyContinue | ForEach-Object { Stop-Process -Id \\\\$_.OwningProcess -Force -ErrorAction SilentlyContinue }\" 2>&1; sleep 2; netstat -ano | grep \":8000.*LISTEN\")",
+      "Bash(powershell -Command \"Stop-Process -Id 7720 -Force; Stop-Process -Id 23420 -Force\" 2>&1; sleep 2; netstat -ano | grep \":8000.*LISTEN\")",
+      "Bash(powershell -Command \"Get-Process -Id 7720,23420 -ErrorAction SilentlyContinue | Format-Table Id,ProcessName,HasExited\" 2>&1)",
+      "Bash(powershell -Command \"tasklist /fi 'PID eq 7720' 2>&1; tasklist /fi 'PID eq 23420' 2>&1\")",
+      "Bash(powershell -Command \"Get-Process python -ErrorAction SilentlyContinue | Where-Object { \\\\$_.Id -ne \\\\$PID } | Stop-Process -Force -ErrorAction SilentlyContinue\" 2>&1; sleep 3; netstat -ano | grep \":8000.*LISTEN\")"
+    ]
+  }
+}

@@ -1,0 +1,84 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  * {
+    border-color: #e0e4f0;
+  }
+  html {
+    color-scheme: light only;
+  }
+  body {
+    background-color: #ffffff !important;
+    color: #2d3a6e !important;
+    font-family: "Inter", -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+  }
+}
+
+/* Custom scrollbar */
+::-webkit-scrollbar {
+  width: 5px;
+}
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+::-webkit-scrollbar-thumb {
+  background: #c8cde0;
+  border-radius: 3px;
+}
+::-webkit-scrollbar-thumb:hover {
+  background: #aeb5d0;
+}
+
+/* Code block styling */
+pre {
+  @apply rounded-xl overflow-x-auto;
+}
+
+/* Textarea auto-resize helper */
+textarea {
+  field-sizing: content;
+}
+
+/* Markdown content */
+.markdown-content p {
+  @apply mb-3 last:mb-0;
+}
+.markdown-content ul,
+.markdown-content ol {
+  @apply mb-3 pl-6;
+}
+.markdown-content ul {
+  @apply list-disc;
+}
+.markdown-content ol {
+  @apply list-decimal;
+}
+.markdown-content li {
+  @apply mb-1;
+}
+.markdown-content h1,
+.markdown-content h2,
+.markdown-content h3 {
+  @apply font-semibold mb-2 mt-4 first:mt-0;
+}
+.markdown-content h1 { @apply text-xl; }
+.markdown-content h2 { @apply text-lg; }
+.markdown-content h3 { @apply text-base; }
+.markdown-content blockquote {
+  @apply border-l-2 pl-4 italic text-evo-muted mb-3;
+  border-color: #4f6ef7;
+}
+.markdown-content a {
+  color: #4f6ef7;
+}
+.markdown-content a:hover {
+  text-decoration: underline;
+}
+.markdown-content code:not(pre code) {
+  @apply bg-evo-card px-1.5 py-0.5 rounded text-sm;
+  color: #4f6ef7;
+}
