@@ -62,20 +62,27 @@ export function statusCallback(req: Request, res: Response): void {
 
 export async function makeCall(req: Request, res: Response): Promise<void> {
   try {
-    const { to, model, systemPrompt } = req.body;
+    const { to, model } = req.body;
     if (!to) {
       res.status(400).json({ error: "Phone number (to) is required" });
       return;
     }
 
+    // Ensure E.164 format
+    let phoneNum = to.replace(/[\s\-()]/g, "");
+    if (!phoneNum.startsWith("+")) {
+      phoneNum = `+${phoneNum}`;
+    }
+
     const client = twilio(config.twilioAccountSid, config.twilioAuthToken);
 
-    const twimlUrl = `${config.serverUrl}/api/call/webhook?model=${encodeURIComponent(model || config.phoneAgentModel)}`;
+    // Use TwiML directly instead of URL to avoid query param issues
+    const twiml = buildIncomingCallTwiml({ model: model || config.phoneAgentModel });
 
     const call = await client.calls.create({
-      to,
+      to: phoneNum,
       from: config.twilioPhoneNumber,
-      url: twimlUrl,
+      twiml,
       statusCallback: `${config.serverUrl}/api/call/status`,
       statusCallbackEvent: ["initiated", "ringing", "answered", "completed"],
     });
@@ -85,7 +92,7 @@ export async function makeCall(req: Request, res: Response): Promise<void> {
       callSid: call.sid,
       direction: "outbound",
       from: config.twilioPhoneNumber,
-      to,
+      to: phoneNum,
       status: call.status || "initiated",
       startedAt: new Date().toISOString(),
     });
