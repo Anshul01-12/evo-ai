@@ -15,6 +15,7 @@ import {
   Wand2,
   BookOpen,
   Terminal,
+  Phone,
 } from "lucide-react";
 import { useChatStore } from "@/stores/chatStore";
 import { fetchHistory, fetchConversation, deleteConversation } from "@/services/api";
@@ -108,6 +109,7 @@ export function Sidebar() {
     { icon: Wand2, label: "Image Generator", path: "/image-generator" },
     { icon: BookOpen, label: "PDF Q&A", path: "/documents" },
     { icon: Terminal, label: "Voice Command", path: "/voice-command" },
+    { icon: Phone, label: "Phone Agent", path: "/phone" },
   ];
 
   return (
