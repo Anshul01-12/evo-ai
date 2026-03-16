@@ -301,9 +301,10 @@ export function buildIncomingCallTwiml(params?: {
 
   return `<?xml version="1.0" encoding="UTF-8"?>
 <Response>
-  <Say voice="alice">Hello. You are connected to the AI phone agent. Speak naturally after the tone.</Say>
+  <Say voice="alice">Hello. You are connected to the Evo AI phone agent. Please speak after the beep.</Say>
+  <Pause length="1"/>
   <Connect>
-    <Stream url="${streamUrl.toString()}">
+    <Stream url="${streamUrl.toString()}" track="inbound_track">
       <Parameter name="userId" value="${params?.userId || ""}" />
       <Parameter name="sessionId" value="${params?.sessionId || ""}" />
       <Parameter name="model" value="${params?.model || config.phoneAgentModel}" />
