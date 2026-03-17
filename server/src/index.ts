@@ -3,7 +3,6 @@ import http from "http";
 import cors from "cors";
 import helmet from "helmet";
 import morgan from "morgan";
-import fs from "fs";
 import { Server as SocketIOServer } from "socket.io";
 
 import { config } from "./config";
@@ -23,12 +22,8 @@ app.use(morgan("dev"));
 app.use(express.json({ limit: "10mb" }));
 app.use(express.urlencoded({ extended: true }));
 
-// Ensure upload directory exists
-fs.mkdirSync(config.uploadDir, { recursive: true });
-
 // Routes
 app.use("/api", routes);
-app.use("/uploads", express.static(config.uploadDir));
 
 const io = new SocketIOServer(server, {
   cors: {

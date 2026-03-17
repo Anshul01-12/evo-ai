@@ -34,9 +34,9 @@ export function ChatMessage({ message }: Props) {
 
           {isUser ? (
             <div>
-              {message.imageUrl && (
+              {(message.imageUrl || message.imageData) && (
                 <img
-                  src={message.imageUrl}
+                  src={message.imageUrl || `data:${message.imageMime || "image/png"};base64,${message.imageData}`}
                   alt="Uploaded"
                   className="max-w-xs rounded-xl border border-evo-border mb-2"
                 />

@@ -1,6 +1,7 @@
 import { Response } from "express";
 import fs from "fs";
 import path from "path";
+import os from "os";
 import { Conversation } from "../models/Conversation";
 import { AuthRequest } from "../middleware/auth";
 import {
@@ -245,14 +246,19 @@ export async function uploadFile(req: AuthRequest, res: Response): Promise<void>
 
     let ingestionResult = null;
     if (file.mimetype === "application/pdf") {
+      // Write buffer to temp file for AI service ingestion
+      const tmpPath = path.join(os.tmpdir(), `evo-${Date.now()}-${file.originalname}`);
       try {
+        fs.writeFileSync(tmpPath, file.buffer);
         ingestionResult = await ingestDocument({
-          filePath: file.path,
+          filePath: tmpPath,
           filename: file.originalname,
           collectionName,
         });
       } catch (err) {
         console.error("[Upload] AI ingest failed:", err);
+      } finally {
+        try { fs.unlinkSync(tmpPath); } catch {}
       }
     }
 
@@ -260,8 +266,6 @@ export async function uploadFile(req: AuthRequest, res: Response): Promise<void>
       message: "File uploaded successfully",
       file: {
         filename: file.originalname,
-        storedAs: file.filename,
-        path: file.path,
         size: file.size,
         mimetype: file.mimetype,
       },
@@ -296,8 +300,7 @@ export async function analyzeUploadedImage(req: AuthRequest, res: Response): Pro
       return;
     }
 
-    const imageBuffer = fs.readFileSync(file.path);
-    const imageBase64 = imageBuffer.toString("base64");
+    const imageBase64 = file.buffer.toString("base64");
 
     const visionResult: any = await analyzeImage({
       imageBase64,
@@ -312,7 +315,7 @@ export async function analyzeUploadedImage(req: AuthRequest, res: Response): Pro
       timestamp: new Date(),
     };
 
-    // If user is authenticated, save to conversation
+    // If user is authenticated, save to conversation with image in DB
     const userId = req.userId;
     const sessionId = typeof req.body.sessionId === "string" ? req.body.sessionId : undefined;
     let conversationId = null;
@@ -320,10 +323,11 @@ export async function analyzeUploadedImage(req: AuthRequest, res: Response): Pro
     if (userId) {
       try {
         const { conversation } = await resolveConversation(userId, sessionId, model);
-        const imageUrl = `${req.protocol}://${req.get("host")}/uploads/${file.filename}`;
         conversation.messages.push({
           role: "user",
-          content: `Question about image "${file.originalname}": ${question}\nImage: ${imageUrl}`,
+          content: `Question about image "${file.originalname}": ${question}`,
+          imageData: imageBase64,
+          imageMime: file.mimetype,
           timestamp: new Date(),
         });
         conversation.messages.push(assistantMessage);
@@ -340,9 +344,9 @@ export async function analyzeUploadedImage(req: AuthRequest, res: Response): Pro
       model: visionResult.model || model,
       image: {
         filename: file.originalname,
-        storedAs: file.filename,
         mimetype: file.mimetype,
         size: file.size,
+        dataUrl: `data:${file.mimetype};base64,${imageBase64}`,
       },
       message: assistantMessage,
       metadata: visionResult.metadata || {},

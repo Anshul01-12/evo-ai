@@ -4,6 +4,8 @@ export interface Message {
   content: string;
   timestamp: string;
   imageUrl?: string;
+  imageData?: string;
+  imageMime?: string;
 }
 
 export interface Conversation {

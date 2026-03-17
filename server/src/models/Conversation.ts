@@ -3,6 +3,8 @@ import mongoose, { Schema, Document } from "mongoose";
 export interface IMessage {
   role: "user" | "assistant" | "system";
   content: string;
+  imageData?: string; // base64-encoded image stored in DB
+  imageMime?: string; // e.g. "image/png"
   timestamp: Date;
 }
 
@@ -21,6 +23,8 @@ const messageSchema = new Schema<IMessage>(
   {
     role: { type: String, enum: ["user", "assistant", "system"], required: true },
     content: { type: String, required: true },
+    imageData: { type: String },
+    imageMime: { type: String },
     timestamp: { type: Date, default: Date.now },
   },
   { _id: true }
