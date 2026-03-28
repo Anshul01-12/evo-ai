@@ -11,6 +11,7 @@ import { TextTools } from "@/components/features/TextTools";
 import { ImageGenerator } from "@/components/features/ImageGenerator";
 import { VoiceCommand } from "@/components/features/VoiceCommand";
 import { PhoneCallPage } from "@/components/features/PhoneCall";
+import { MockInterview } from "@/components/features/MockInterview";
 import { useChatStore } from "@/stores/chatStore";
 import { useAuthStore } from "@/stores/authStore";
 
@@ -30,6 +31,7 @@ function AppLayout() {
         <Route path="/image-generator" element={<ImageGenerator />} />
         <Route path="/voice-command" element={<VoiceCommand />} />
         <Route path="/phone" element={<PhoneCallPage />} />
+        <Route path="/mock-interview" element={<MockInterview />} />
       </Routes>
     </div>
   );

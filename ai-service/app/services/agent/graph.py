@@ -187,7 +187,17 @@ async def reasoning_node(state: AgentState) -> AgentState:
 
     raw_content = response.content if isinstance(response.content, str) else json.dumps(response.content)
     try:
-        state["reasoning"] = json.loads(raw_content)
+        parsed = json.loads(raw_content)
+        if isinstance(parsed, dict):
+            state["reasoning"] = parsed
+        else:
+            state["reasoning"] = {
+                "thought": "Parsed JSON was not a dict.",
+                "use_tool": False,
+                "tool_name": "none",
+                "tool_input": {},
+                "final_answer": raw_content,
+            }
     except json.JSONDecodeError:
         state["reasoning"] = {
             "thought": "Fallback because the reasoning output was not valid JSON.",

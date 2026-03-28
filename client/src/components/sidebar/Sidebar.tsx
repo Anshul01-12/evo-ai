@@ -19,6 +19,7 @@ import {
   Phone,
   History,
   X,
+  Brain,
 } from "lucide-react";
 import { useChatStore } from "@/stores/chatStore";
 import { fetchHistory, fetchConversation, deleteConversation } from "@/services/api";
@@ -116,6 +117,7 @@ export function Sidebar() {
     { icon: BookOpen, label: "PDF Q&A", path: "/documents" },
     { icon: Terminal, label: "Voice Command", path: "/voice-command" },
     { icon: Phone, label: "Phone Agent", path: "/phone" },
+    { icon: Brain, label: "Mock Interview", path: "/mock-interview" },
   ];
 
   return (

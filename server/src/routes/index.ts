@@ -6,6 +6,7 @@ import voiceRoutes from "./voice";
 import phoneRoutes from "./phone";
 import visionRoutes from "./vision";
 import agentRoutes from "./agent";
+import interviewRoutes from "./interview";
 
 const router = Router();
 
@@ -16,5 +17,6 @@ router.use("/voice", voiceRoutes);
 router.use("/call", phoneRoutes);
 router.use("/vision", visionRoutes);
 router.use("/agent", agentRoutes);
+router.use("/interview", interviewRoutes);
 
 export default router;

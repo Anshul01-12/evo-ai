@@ -328,6 +328,122 @@ export function deleteDocument(id: string) {
   );
 }
 
+// ────────────────────────────────────────────────────
+// Mock Interview
+// ────────────────────────────────────────────────────
+
+export function startMockInterview(params: {
+  language: string;
+  topic: string;
+  difficulty: string;
+  questionCount: number;
+  interviewType?: string;
+  resumeText?: string;
+  model?: string;
+}) {
+  return request<{
+    sessionId: string;
+    questions: Array<{ index: number; question: string }>;
+    status: string;
+  }>(`${API}/interview/start`, {
+    method: "POST",
+    body: JSON.stringify(params),
+  });
+}
+
+export function evaluateInterviewAnswer(params: {
+  sessionId: string;
+  questionIndex: number;
+  userAnswer: string;
+  timeSpent: number;
+  emotionSnapshots?: Array<{
+    timestamp: number;
+    confidence: number;
+    happy: number;
+    neutral: number;
+    sad: number;
+    angry: number;
+    surprised: number;
+    fearful: number;
+    disgusted: number;
+  }>;
+}) {
+  return request<{
+    questionIndex: number;
+    evaluation: {
+      score: number;
+      technicalAccuracy: number;
+      clarity: number;
+      communication: number;
+      feedback: string;
+    };
+  }>(`${API}/interview/evaluate`, {
+    method: "POST",
+    body: JSON.stringify(params),
+  });
+}
+
+export function completeInterviewSession(params: {
+  sessionId: string;
+  emotionSnapshots?: Array<any>;
+}) {
+  return request<{
+    sessionId: string;
+    overallScore: number;
+    questions: Array<{
+      question: string;
+      userAnswer: string;
+      score: number;
+      feedback: string;
+      technicalAccuracy: number;
+      clarity: number;
+      communication: number;
+      timeSpent: number;
+    }>;
+    behavioralAnalysis: {
+      confidence: number;
+      eyeContact: number;
+      composure: number;
+      hesitation: number;
+    };
+    finalReport: string;
+    status: string;
+  }>(`${API}/interview/complete`, {
+    method: "POST",
+    body: JSON.stringify(params),
+  });
+}
+
+export function fetchInterviewSessions() {
+  return request<{
+    sessions: Array<{
+      _id: string;
+      language: string;
+      topic: string;
+      difficulty: string;
+      questionCount: number;
+      overallScore: number;
+      status: string;
+      interviewType: string;
+      createdAt: string;
+    }>;
+  }>(`${API}/interview/sessions`);
+}
+
+export function fetchInterviewSession(id: string) {
+  return request<any>(`${API}/interview/sessions/${id}`);
+}
+
+export function deleteInterviewSession(id: string) {
+  return request<{ success: boolean }>(`${API}/interview/sessions/${id}`, {
+    method: "DELETE",
+  });
+}
+
+// ────────────────────────────────────────────────────
+// Documents (continued)
+// ────────────────────────────────────────────────────
+
 export function queryDocument(params: {
   question: string;
   collectionName: string;

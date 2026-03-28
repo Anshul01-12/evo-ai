@@ -43,7 +43,11 @@
       "Bash(redis-cli:*)",
       "Bash(tasklist:*)",
       "Bash(.venv/Scripts/python.exe -c \"\nimport asyncio, httpx, base64\nfrom urllib.parse import quote\n\nasync def test\\(\\):\n    prompt = 'a person sitting on car'\n    url = f'https://image.pollinations.ai/prompt/{quote\\(prompt\\)}?width=512&height=512'\n    print\\('URL:', url\\)\n    async with httpx.AsyncClient\\(timeout=120.0, follow_redirects=True\\) as client:\n        r = await client.get\\(url\\)\n        print\\('Status:', r.status_code\\)\n        print\\('Content-Type:', r.headers.get\\('content-type'\\)\\)\n        print\\('Size:', len\\(r.content\\)\\)\n\nasyncio.run\\(test\\(\\)\\)\n\" 2>&1)",
-      "Bash(.venv/Scripts/python.exe -c \"\nimport asyncio, httpx\nfrom urllib.parse import quote\n\nasync def test\\(\\):\n    prompts = [\n        'beautiful sunset over mountains',\n        'a cute cat',\n        'cyberpunk city at night',\n        'a person sitting on car'\n    ]\n    async with httpx.AsyncClient\\(timeout=120.0, follow_redirects=True\\) as client:\n        for p in prompts:\n            url = f'https://image.pollinations.ai/prompt/{quote\\(p\\)}?width=256&height=256'\n            r = await client.get\\(url\\)\n            print\\(f'{p:40s} -> status={r.status_code} size={len\\(r.content\\)}'\\)\nasyncio.run\\(test\\(\\)\\)\n\" 2>&1)"
+      "Bash(.venv/Scripts/python.exe -c \"\nimport asyncio, httpx\nfrom urllib.parse import quote\n\nasync def test\\(\\):\n    prompts = [\n        'beautiful sunset over mountains',\n        'a cute cat',\n        'cyberpunk city at night',\n        'a person sitting on car'\n    ]\n    async with httpx.AsyncClient\\(timeout=120.0, follow_redirects=True\\) as client:\n        for p in prompts:\n            url = f'https://image.pollinations.ai/prompt/{quote\\(p\\)}?width=256&height=256'\n            r = await client.get\\(url\\)\n            print\\(f'{p:40s} -> status={r.status_code} size={len\\(r.content\\)}'\\)\nasyncio.run\\(test\\(\\)\\)\n\" 2>&1)",
+      "Bash(for key:*)",
+      "Bash(pip show:*)",
+      "Bash(pip3 show:*)",
+      "Bash(python -m pip show fastapi)"
     ]
   }
 }
